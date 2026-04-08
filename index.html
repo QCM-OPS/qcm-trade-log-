@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QCM — Trade Entry / Exit Log</title>
+<style>
+  :root {
+    --orange:      #E8671A;
+    --orange-pale: #FFF0E6;
+    --orange-mid:  #F4874A;
+    --navy:        #1A2B3C;
+    --navy-mid:    #2C4159;
+    --white:       #FFFFFF;
+    --off-white:   #FAFAF8;
+    --gray-50:     #F5F5F3;
+    --gray-100:    #EAEAE7;
+    --gray-300:    #BBBBB5;
+    --gray-500:    #7A7A72;
+    --gray-700:    #3E3E38;
+    --text:        #1A1A14;
+    --green:       #2D7A4F;
+    --green-pale:  #E8F5EE;
+    --red:         #C0392B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--navy);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    display: flex;
+    align-items: stretch;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .header-logo {
+    background: var(--white);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--orange);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: white;
+    font-family: Georgia, serif; letter-spacing: -1px;
+  }
+  .logo-text strong { display: block; font-size: 11px; font-weight: 700; color: var(--navy); letter-spacing: 0.04em; }
+  .logo-text span   { font-size: 9px; color: var(--gray-500); letter-spacing: 0.07em; text-transform: uppercase; }
+  .header-title {
+    padding: 14px 18px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .header-title h1  { font-size: 15px; font-weight: 700; color: var(--white); line-height: 1.2; }
+  .header-title p   { font-size: 11px; color: #AABBCC; margin-top: 3px; }
+  .orange-stripe { height: 4px; background: var(--orange); }
+
+  /* ── Mode toggle ── */
+  .mode-wrap {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+  }
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid var(--gray-100);
+    background: var(--white);
+  }
+  .mode-btn {
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    background: var(--white);
+    color: var(--gray-300);
+    transition: all 0.18s;
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .mode-btn .mode-icon { font-size: 18px; }
+  .mode-btn.active-entry {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .mode-btn.active-exit {
+    background: var(--orange);
+    color: var(--white);
+  }
+
+  /* ── Main container ── */
+  .main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* ── Datetime pill ── */
+  .datetime-pill {
+    background: var(--navy);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .dt-left .dt-label { font-size: 10px; font-weight: 700; color: #AABBCC; letter-spacing: 0.08em; text-transform: uppercase; }
+  .dt-left .dt-time  { font-size: 22px; font-weight: 700; color: var(--white); margin-top: 2px; }
+  .dt-right          { text-align: right; }
+  .dt-right .dt-date { font-size: 14px; font-weight: 600; color: var(--white); }
+  .dt-right .dt-day  { font-size: 11px; color: #AABBCC; margin-top: 2px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-100);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    transition: box-shadow 0.2s;
+  }
+  .card:focus-within { box-shadow: 0 4px 20px rgba(232,103,26,0.12); border-color: #F4874A; }
+  .card-header {
+    padding: 11px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-header.navy   { background: var(--navy); }
+  .card-header.orange { background: var(--orange); }
+  .card-icon {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 12px; font-weight: 700; color: var(--white); letter-spacing: 0.04em; text-transform: uppercase; }
+  .card-body { padding: 16px; }
+
+  /* ── Fields ── */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  label {
+    display: block;
+    font-size: 11px; font-weight: 700;
+    color: var(--gray-500); letter-spacing: 0.07em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  label .req { color: var(--orange); margin-left: 2px; }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    font-family: inherit; font-size: 16px;
+    color: var(--text);
+    background: var(--gray-50);
+    border: 1.5px solid var(--gray-100);
+    border-radius: 10px;
+    padding: 12px 13px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--orange);
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(232,103,26,0.1);
+  }
+  input.error, select.error, textarea.error {
+    border-color: var(--red);
+    background: #FFF8F8;
+  }
+  input::placeholder, textarea::placeholder { color: var(--gray-300); }
+  textarea { resize: none; line-height: 1.6; min-height: 90px; }
+
+  /* ── Rating stars ── */
+  .rating-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .rating-btn {
+    padding: 10px 4px 8px;
+    border-radius: 10px;
+    border: 1.5px solid var(--gray-100);
+    background: var(--gray-50);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-size: 10px; font-weight: 700;
+    color: var(--gray-500);
+    line-height: 1.4;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .rating-btn .r-num  { font-size: 16px; font-weight: 800; display: block; margin-bottom: 3px; }
+  .rating-btn:active  { transform: scale(0.96); }
+  .rating-btn.sel-1   { background: #FDECEA; border-color: #C0392B; color: #C0392B; }
+  .rating-btn.sel-2   { background: #FEF5E7; border-color: #E67E22; color: #E67E22; }
+  .rating-btn.sel-3   { background: #FFF9E6; border-color: #D4AC0D; color: #7D6608; }
+  .rating-btn.sel-4   { background: #EAF5EE; border-color: #27AE60; color: #1E8449; }
+  .rating-btn.sel-5   { background: #E8F5EE; border-color: #1A7A42; color: #1A7A42; }
+  .rating-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 5px; padding: 0 2px;
+    font-size: 10px; color: var(--gray-500);
+  }
+
+  /* ── Photo upload ── */
+  .photo-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: 12px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .photo-zone:hover, .photo-zone.drag-over {
+    border-color: var(--orange);
+    background: var(--orange-pale);
+  }
+  .photo-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+    background: none; border: none; padding: 0;
+    font-size: 0;
+  }
+  .pz-icon  { font-size: 30px; margin-bottom: 8px; }
+  .pz-title { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+  .pz-sub   { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px;
+  }
+  .photo-thumb {
+    aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; background: var(--gray-100);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb .rm {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,0,0,0.65); border: none;
+    color: white; font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+
+  /* ── Submit ── */
+  .submit-wrap { margin-top: 20px; }
+  .btn-submit {
+    width: 100%; padding: 17px;
+    border: none; border-radius: 13px;
+    font-family: inherit; font-size: 17px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.02em;
+    transition: all 0.15s; position: relative;
+  }
+  .btn-entry { background: var(--navy); color: var(--white); }
+  .btn-exit  { background: var(--orange); color: var(--white); }
+  .btn-submit:hover  { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,0,0,0.18); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .form-note {
+    text-align: center; font-size: 12px; color: var(--gray-500);
+    margin-top: 10px; line-height: 1.5;
+  }
+
+  /* ── Error message ── */
+  .err-msg {
+    font-size: 11px; color: var(--red);
+    margin-top: 4px; display: none;
+  }
+
+  /* ── Loading spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Success screen ── */
+  .success-screen {
+    display: none;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center;
+  }
+  .success-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; margin: 0 auto 20px;
+  }
+  .success-icon.entry-icon { background: var(--navy); }
+  .success-icon.exit-icon  { background: var(--orange-pale); border: 3px solid var(--orange); }
+  .success-screen h2 { font-size: 26px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+  .success-screen .s-sub { font-size: 15px; color: var(--gray-500); margin-bottom: 24px; line-height: 1.6; }
+  .success-card {
+    background: var(--white);
+    border: 1px solid var(--gray-100);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  .success-card .sc-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+  .success-card .sc-row:last-child { border-bottom: none; }
+  .success-card .sc-label { font-size: 12px; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; }
+  .success-card .sc-val   { font-size: 14px; font-weight: 600; color: var(--navy); }
+  .btn-new {
+    width: 100%; padding: 15px;
+    border: none; border-radius: 12px;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; background: var(--navy); color: var(--white);
+    transition: opacity 0.15s;
+  }
+  .btn-new:hover { opacity: 0.9; }
+
+  /* ── Error screen ── */
+  .error-screen {
+    display: none;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center;
+  }
+  .error-screen h2  { font-size: 22px; font-weight: 700; color: var(--red); margin-bottom: 8px; }
+  .error-screen p   { font-size: 15px; color: var(--gray-500); margin-bottom: 20px; }
+  .btn-retry {
+    padding: 14px 28px;
+    border: none; border-radius: 12px;
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; background: var(--orange); color: var(--white);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="logo-mark">Q</div>
+      <div class="logo-text">
+        <strong>Quantum</strong>
+        <span>Construction Mgmt</span>
+      </div>
+    </div>
+    <div class="header-title">
+      <h1>Trade Entry / Exit Log</h1>
+      <p>Scan QR code at each unit / work area</p>
+    </div>
+  </div>
+  <div class="orange-stripe"></div>
+</div>
+
+<!-- ── Form ── -->
+<div id="formView">
+  <div class="mode-wrap">
+    <div class="mode-toggle">
+      <button class="mode-btn active-entry" id="btnEntry" onclick="setMode('entry')" type="button">
+        <span class="mode-icon">🟢</span> ENTRY
+      </button>
+      <button class="mode-btn" id="btnExit" onclick="setMode('exit')" type="button">
+        <span class="mode-icon">🔴</span> EXIT
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- Datetime pill -->
+    <div class="datetime-pill">
+      <div class="dt-left">
+        <div class="dt-label">Current Time</div>
+        <div class="dt-time" id="dtTime">--:--</div>
+      </div>
+      <div class="dt-right">
+        <div class="dt-date" id="dtDate">---</div>
+        <div class="dt-day"  id="dtDay">---</div>
+      </div>
+    </div>
+
+    <form id="logForm" novalidate>
+
+      <!-- Trade Info -->
+      <div class="card">
+        <div class="card-header navy">
+          <div class="card-icon">👷</div>
+          <h2>Trade Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="First and Last Name" autocomplete="name">
+            <div class="err-msg" id="e-name">Please enter your full name.</div>
+          </div>
+          <div class="field">
+            <label>Company / Trade <span class="req">*</span></label>
+            <input type="text" id="f-company" placeholder="Company name" autocomplete="organization">
+            <div class="err-msg" id="e-company">Please enter your company name.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Info -->
+      <div class="card">
+        <div class="card-header navy">
+          <div class="card-icon">🏗️</div>
+          <h2>Project Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field">
+              <label>Project Code <span class="req">*</span></label>
+              <input type="text" id="f-project" placeholder="e.g. QCM-047" autocomplete="off">
+              <div class="err-msg" id="e-project">Required.</div>
+            </div>
+            <div class="field">
+              <label>Unit / Area <span class="req">*</span></label>
+              <input type="text" id="f-unit" placeholder="e.g. Unit 304" autocomplete="off">
+              <div class="err-msg" id="e-unit">Required.</div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Date <span class="req">*</span></label>
+              <input type="date" id="f-date">
+              <div class="err-msg" id="e-date">Required.</div>
+            </div>
+            <div class="field">
+              <label>Time <span class="req">*</span></label>
+              <input type="time" id="f-time">
+              <div class="err-msg" id="e-time">Required.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Site Condition — only shown on exit -->
+      <div class="card" id="conditionCard" style="display:none">
+        <div class="card-header orange">
+          <div class="card-icon">✅</div>
+          <h2>Site Condition on Departure</h2>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label>Cleanliness Rating</label>
+            <div class="rating-row" id="ratingRow">
+              <div class="rating-btn" data-v="1" onclick="setRating(1)"><span class="r-num">1</span>Poor</div>
+              <div class="rating-btn" data-v="2" onclick="setRating(2)"><span class="r-num">2</span>Fair</div>
+              <div class="rating-btn" data-v="3" onclick="setRating(3)"><span class="r-num">3</span>OK</div>
+              <div class="rating-btn" data-v="4" onclick="setRating(4)"><span class="r-num">4</span>Good</div>
+              <div class="rating-btn" data-v="5" onclick="setRating(5)"><span class="r-num">5</span>Great</div>
+            </div>
+            <div class="rating-labels"><span>Needs attention</span><span>Left clean</span></div>
+          </div>
+          <div class="field">
+            <label>Work Progress Notes</label>
+            <textarea id="f-notes" rows="3" placeholder="Describe work completed, issues encountered, or anything the PM should know..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photos -->
+      <div class="card">
+        <div class="card-header navy">
+          <div class="card-icon">📷</div>
+          <h2>Site Photos</h2>
+        </div>
+        <div class="card-body">
+          <div class="photo-zone" id="photoZone">
+            <input type="file" id="f-photos" accept="image/*" multiple capture="environment" onchange="handlePhotos(this)">
+            <div class="pz-icon">📸</div>
+            <div class="pz-title">Tap to take or upload photos</div>
+            <div class="pz-sub">Site condition, work progress — up to 10 photos</div>
+          </div>
+          <div class="photo-grid" id="photoGrid"></div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-wrap">
+        <button type="submit" class="btn-submit btn-entry" id="btnSubmit">
+          Log Entry
+        </button>
+        <p class="form-note">
+          Submissions save to the QCM project folder.<br>
+          Questions? <strong>Operations@qcmgmt.ca</strong>
+        </p>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ── Success screen ── -->
+<div class="success-screen" id="successView">
+  <div class="success-icon entry-icon" id="successIcon">✓</div>
+  <h2 id="successTitle">Entry Logged</h2>
+  <p class="s-sub" id="successSub">Your entry has been recorded.<br>Have a safe and productive shift.</p>
+  <div class="success-card" id="successSummary"></div>
+  <button class="btn-new" onclick="resetForm()">Log Another Entry / Exit</button>
+</div>
+
+<!-- ── Error screen ── -->
+<div class="error-screen" id="errorView">
+  <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+  <h2>Submission Failed</h2>
+  <p>Something went wrong sending your log.<br>Please try again or contact Operations@qcmgmt.ca</p>
+  <button class="btn-retry" onclick="showForm()">Try Again</button>
+</div>
+
+<script>
+// ── CONFIG — paste your Cloudflare Worker URL here after setup ──
+const WORKER_URL = 'PASTE_YOUR_CLOUDFLARE_WORKER_URL_HERE';
+
+// ── State ──
+let currentMode = 'entry';
+let selectedRating = 0;
+let photoFiles = [];
+
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('dtTime').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('dtDate').textContent =
+    months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  document.getElementById('dtDay').textContent = days[now.getDay()];
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── Auto-fill date & time ──
+function setDefaultDateTime() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('f-date').value =
+    now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+  document.getElementById('f-time').value =
+    pad(now.getHours()) + ':' + pad(now.getMinutes());
+}
+setDefaultDateTime();
+
+// ── Mode toggle ──
+function setMode(mode) {
+  currentMode = mode;
+  const btnEntry = document.getElementById('btnEntry');
+  const btnExit  = document.getElementById('btnExit');
+  const condCard = document.getElementById('conditionCard');
+  const btnSub   = document.getElementById('btnSubmit');
+
+  if (mode === 'entry') {
+    btnEntry.className = 'mode-btn active-entry';
+    btnExit.className  = 'mode-btn';
+    condCard.style.display = 'none';
+    btnSub.textContent = 'Log Entry';
+    btnSub.className   = 'btn-submit btn-entry';
+  } else {
+    btnEntry.className = 'mode-btn';
+    btnExit.className  = 'mode-btn active-exit';
+    condCard.style.display = 'block';
+    btnSub.textContent = 'Log Exit';
+    btnSub.className   = 'btn-submit btn-exit';
+  }
+}
+
+// ── Rating ──
+function setRating(val) {
+  selectedRating = val;
+  document.querySelectorAll('.rating-btn').forEach(btn => {
+    const v = parseInt(btn.dataset.v);
+    btn.className = 'rating-btn' + (v === val ? ' sel-' + val : '');
+  });
+}
+
+// ── Photos ──
+function handlePhotos(input) {
+  const newFiles = Array.from(input.files);
+  photoFiles = [...photoFiles, ...newFiles].slice(0, 10);
+  renderThumbs();
+  input.value = '';
+}
+
+function renderThumbs() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  photoFiles.forEach((file, i) => {
+    const url = URL.createObjectURL(file);
+    grid.innerHTML += `
+      <div class="photo-thumb">
+        <img src="${url}" alt="Photo ${i+1}">
+        <button class="rm" type="button" onclick="removePhoto(${i})">×</button>
+      </div>`;
+  });
+}
+
+function removePhoto(idx) {
+  photoFiles.splice(idx, 1);
+  renderThumbs();
+}
+
+// Drag-over styling
+const zone = document.getElementById('photoZone');
+zone.addEventListener('dragover',  () => zone.classList.add('drag-over'));
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop',      () => zone.classList.remove('drag-over'));
+
+// ── Validation ──
+function validateField(id, errId) {
+  const el  = document.getElementById(id);
+  const err = document.getElementById(errId);
+  if (!el.value.trim()) {
+    el.classList.add('error');
+    err.style.display = 'block';
+    return false;
+  }
+  el.classList.remove('error');
+  err.style.display = 'none';
+  return true;
+}
+
+function clearError(id, errId) {
+  document.getElementById(id).classList.remove('error');
+  document.getElementById(errId).style.display = 'none';
+}
+
+['f-name','f-company','f-project','f-unit','f-date','f-time'].forEach(id => {
+  const errId = 'e-' + id.slice(2);
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => clearError(id, errId));
+});
+
+// ── Submit ──
+document.getElementById('logForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  let valid = true;
+  valid = validateField('f-name',    'e-name')    && valid;
+  valid = validateField('f-company', 'e-company') && valid;
+  valid = validateField('f-project', 'e-project') && valid;
+  valid = validateField('f-unit',    'e-unit')    && valid;
+  valid = validateField('f-date',    'e-date')    && valid;
+  valid = validateField('f-time',    'e-time')    && valid;
+  if (!valid) {
+    document.querySelector('.error')?.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmit');
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+  // Build FormData (supports file attachments)
+  const fd = new FormData();
+  fd.append('name',    document.getElementById('f-name').value.trim());
+  fd.append('company', document.getElementById('f-company').value.trim());
+  fd.append('type',    currentMode === 'entry' ? 'Entry' : 'Exit');
+  fd.append('project', document.getElementById('f-project').value.trim());
+  fd.append('unit',    document.getElementById('f-unit').value.trim());
+  fd.append('date',    document.getElementById('f-date').value);
+  fd.append('time',    document.getElementById('f-time').value);
+  fd.append('rating',  selectedRating > 0 ? String(selectedRating) + ' / 5' : 'Not rated');
+  fd.append('notes',   document.getElementById('f-notes')?.value.trim() || '');
+  fd.append('timestamp', new Date().toISOString());
+  photoFiles.forEach((file, i) => fd.append('photo_' + i, file, file.name));
+
+  try {
+    let success = false;
+
+    if (WORKER_URL && WORKER_URL !== 'PASTE_YOUR_CLOUDFLARE_WORKER_URL_HERE') {
+      const res = await fetch(WORKER_URL, { method:'POST', body: fd });
+      success = res.ok;
+    } else {
+      // Demo mode — simulate success when Worker URL not yet configured
+      await new Promise(r => setTimeout(r, 1200));
+      success = true;
+    }
+
+    if (success) {
+      showSuccess();
+    } else {
+      throw new Error('Server returned error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = origText;
+    showError();
+  }
+});
+
+// ── Success ──
+function showSuccess() {
+  const name    = document.getElementById('f-name').value.trim();
+  const company = document.getElementById('f-company').value.trim();
+  const project = document.getElementById('f-project').value.trim();
+  const unit    = document.getElementById('f-unit').value.trim();
+  const date    = document.getElementById('f-date').value;
+  const time    = document.getElementById('f-time').value;
+  const isEntry = currentMode === 'entry';
+
+  document.getElementById('formView').style.display    = 'none';
+  document.getElementById('successView').style.display = 'block';
+  document.getElementById('errorView').style.display   = 'none';
+
+  document.getElementById('successTitle').textContent = isEntry ? 'Entry Logged ✓' : 'Exit Logged ✓';
+  document.getElementById('successSub').textContent   = isEntry
+    ? 'Your entry has been recorded. Have a safe and productive shift.'
+    : 'Your exit has been recorded. Thanks for keeping the site clean!';
+
+  const icon = document.getElementById('successIcon');
+  icon.textContent = '✓';
+  icon.className   = 'success-icon ' + (isEntry ? 'entry-icon' : 'exit-icon');
+  icon.style.background = isEntry ? 'var(--navy)' : 'var(--orange)';
+  icon.style.color = 'white';
+  icon.style.border = 'none';
+
+  document.getElementById('successSummary').innerHTML = `
+    <div class="sc-row"><span class="sc-label">Name</span><span class="sc-val">${name}</span></div>
+    <div class="sc-row"><span class="sc-label">Company</span><span class="sc-val">${company}</span></div>
+    <div class="sc-row"><span class="sc-label">Type</span><span class="sc-val">${isEntry ? '🟢 Entry' : '🔴 Exit'}</span></div>
+    <div class="sc-row"><span class="sc-label">Project</span><span class="sc-val">${project}</span></div>
+    <div class="sc-row"><span class="sc-label">Unit / Area</span><span class="sc-val">${unit}</span></div>
+    <div class="sc-row"><span class="sc-label">Date</span><span class="sc-val">${date}</span></div>
+    <div class="sc-row"><span class="sc-label">Time</span><span class="sc-val">${time}</span></div>
+  `;
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Error ──
+function showError() {
+  document.getElementById('formView').style.display   = 'none';
+  document.getElementById('successView').style.display = 'none';
+  document.getElementById('errorView').style.display  = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showForm() {
+  document.getElementById('formView').style.display   = 'block';
+  document.getElementById('successView').style.display = 'none';
+  document.getElementById('errorView').style.display  = 'none';
+}
+
+// ── Reset ──
+function resetForm() {
+  document.getElementById('logForm').reset();
+  selectedRating = 0;
+  photoFiles = [];
+  document.getElementById('photoGrid').innerHTML = '';
+  document.querySelectorAll('.rating-btn').forEach(b => b.className = 'rating-btn');
+  document.getElementById('btnSubmit').disabled = false;
+  setMode('entry');
+  setDefaultDateTime();
+  showForm();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
