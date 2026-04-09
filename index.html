@@ -706,7 +706,7 @@ document.getElementById('logForm').addEventListener('submit', async function(e) 
   try {
     let success = false;
 
-    if (WORKER_URL && WORKER_URL !== 'PASTE_YOUR_CLOUDFLARE_WORKER_URL_HERE') {
+    if (WORKER_URL && WORKER_URL !== 'https://hook.us2.make.com/xq73u37u0g3gwvyq82kn6xeq7xmfsiaj') {
       const res = await fetch(WORKER_URL, { method:'POST', body: fd });
       success = res.ok;
     } else {
